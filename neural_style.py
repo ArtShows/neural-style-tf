@@ -187,6 +187,10 @@ def parse_args():
     default='frame_{}.ppm',
     help='Filename format of the input content frames.')
   
+  parser.add_argument('--optical_flow_dir', type=str, 
+    default='./video_input',
+    help='Relative or absolute directory path to forward and backward optical flow and consistency frames.')
+
   parser.add_argument('--backward_optical_flow_frmt', type=str, 
     default='backward_{}_{}.flo',
     help='Filename format of the backward optical flow files.')
@@ -762,7 +766,7 @@ def get_prev_warped_frame(frame):
   prev_frame = frame - 1
   # backwards flow: current frame -> previous frame
   fn = args.backward_optical_flow_frmt.format(str(frame), str(prev_frame))
-  path = os.path.join(args.video_input_dir, fn)
+  path = os.path.join(args.optical_flow_dir, fn)
   flow = read_flow_file(path)
   warped_img = warp_image(prev_img, flow).astype(np.float32)
   img = preprocess(warped_img)
@@ -771,8 +775,8 @@ def get_prev_warped_frame(frame):
 def get_content_weights(frame, prev_frame):
   forward_fn = args.content_weights_frmt.format(str(prev_frame), str(frame))
   backward_fn = args.content_weights_frmt.format(str(frame), str(prev_frame))
-  forward_path = os.path.join(args.video_input_dir, forward_fn)
-  backward_path = os.path.join(args.video_input_dir, backward_fn)
+  forward_path = os.path.join(args.optical_flow_dir, forward_fn)
+  backward_path = os.path.join(args.optical_flow_dir, backward_fn)
   forward_weights = read_weights_file(forward_path)
   backward_weights = read_weights_file(backward_path)
   return forward_weights #, backward_weights
