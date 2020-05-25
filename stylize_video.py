@@ -183,7 +183,7 @@ def parse_args():
   if args.verbose: print('style_images_filenames: ',style_nickname)
   
   #auto-calculate style_imgs_weights if not given for multi-style image
-  if len(args.style_imgs_weights) != len(args.style_images_filenames):
+  if len(args.style_images_filenames) and len(args.style_imgs_weights) != len(args.style_images_filenames):
     new_weights = []
     amnt = len(args.style_images_filenames)
     average_weight = 1/amnt
