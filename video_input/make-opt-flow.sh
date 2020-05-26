@@ -42,14 +42,19 @@ while true; do
   file1=$(printf "$filePattern" "$i")
   file2=$(printf "$filePattern" "$j")
   if [ -a $file2 ]; then
+    echo -e "frame:\t${i}"
     if [ ! -f ${folderName}/forward_${i}_${j}.flo ]; then
       eval $flowCommandLine "$file1" "$file2" "${folderName}/forward_${i}_${j}.flo"
     fi
     if [ ! -f ${folderName}/backward_${j}_${i}.flo ]; then
       eval $flowCommandLine "$file2" "$file1" "${folderName}/backward_${j}_${i}.flo"
     fi
+    if [ ! -f "${folderName}/reliable_${j}_${i}.txt" ]; then
     ./consistencyChecker/consistencyChecker "${folderName}/backward_${j}_${i}.flo" "${folderName}/forward_${i}_${j}.flo" "${folderName}/reliable_${j}_${i}.txt"
+    fi
+    if [ ! -f "${folderName}/reliable_${i}_${j}.txt" ]; then
     ./consistencyChecker/consistencyChecker "${folderName}/forward_${i}_${j}.flo" "${folderName}/backward_${j}_${i}.flo" "${folderName}/reliable_${i}_${j}.txt"
+    fi
   else
     break
   fi
