@@ -73,7 +73,7 @@ def parse_args():
   
   parser.add_argument('--overwrite_image_sequence_video', action='store_true',
     default=False,
-    help='Boolean flag indicating if it\' okay to overwrite a previously rendered video of stylized images')
+    help='Boolean flag indicating if it\'s okay to overwrite a previously rendered video of stylized images')
 
   parser.add_argument('--', type=str, nargs='*',
     dest='additional_args',
