@@ -14,12 +14,13 @@ import json
 from termcolor import colored, cprint
 import colorama
 colorama.init()
-
+import shutil
 
 
 def get_screen_width():
-  columns,lines = os.get_terminal_size() 
-  return columns
+  # columns,lines = os.get_terminal_size() # gave error on other user's system
+  width,height = shutil.get_terminal_size()
+  return width
 
 os.environ["COLUMNS"] = str(get_screen_width())
 
