@@ -8,22 +8,22 @@ if [ "$#" -le 1 ]; then
    exit 1
 fi
 
-echo ""
-read -p "Did you install the required dependencies? [y/n] $cr > " dependencies
+# echo ""
+# read -p "Did you install the required dependencies? [y/n] $cr > " dependencies
 
-if [ "$dependencies" != "y" ]; then
-  echo "Error: Requires dependencies: tensorflow, opencv2 (python), scipy"
-  exit 1;
-fi
+# if [ "$dependencies" != "y" ]; then
+  # echo "Error: Requires dependencies: tensorflow, opencv2 (python), scipy"
+  # exit 1;
+# fi
 
-echo ""
-read -p "Do you have a CUDA enabled GPU? [y/n] $cr > " cuda
+# echo ""
+# read -p "Do you have a CUDA enabled GPU? [y/n] $cr > " cuda
 
-if [ "$cuda" != "y" ]; then
-  device='/cpu:0'
-else
+# if [ "$cuda" != "y" ]; then
+  # device='/cpu:0'
+# else
   device='/gpu:0'
-fi
+# fi
 
 # Parse arguments
 content_image="$1"

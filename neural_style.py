@@ -551,7 +551,10 @@ def check_image(img, path):
   rendering -- where the magic happens
 '''
 def stylize(content_img, style_imgs, init_img, frame=None):
-  with tf.device(args.device), tf.Session() as sess:
+  config = tf.ConfigProto()
+  config.gpu_options.allow_growth = True
+  with tf.device(args.device), tf.Session(config=config) as sess:
+  # with tf.device(args.device), tf.Session() as sess:
     # setup network
     net = build_model(content_img)
     
@@ -633,9 +636,13 @@ def get_optimizer(loss):
     optimizer = tf.train.AdamOptimizer(args.learning_rate)
   return optimizer
 
-def write_video_output(frame, output_img):
+def get_video_frame_output_path(frame):
   fn = args.content_frame_frmt.format(str(frame).zfill(4))
   path = os.path.join(args.video_output_dir, fn)
+  return path
+  
+def write_video_output(frame, output_img):
+  path = get_video_frame_output_path(frame)
   write_image(path, output_img)
 
 def write_image_output(output_img, content_img, style_imgs, init_img):
@@ -755,8 +762,7 @@ def get_mask_image(mask_img, width, height):
 def get_prev_frame(frame):
   # previously stylized frame
   prev_frame = frame - 1
-  fn = args.content_frame_frmt.format(str(prev_frame).zfill(4))
-  path = os.path.join(args.video_output_dir, fn)
+  path = get_video_frame_output_path(prev_frame)
   img = cv2.imread(path, cv2.IMREAD_COLOR)
   check_image(img, path)
   return img
@@ -833,24 +839,25 @@ def render_video():
   for frame in range(args.start_frame, args.end_frame+1):
     with tf.Graph().as_default():
       print('\n---- RENDERING VIDEO FRAME: {}/{} ----\n'.format(frame, args.end_frame))
-      if frame == args.start_frame:
-        content_frame = get_content_frame(frame)
-        style_imgs = get_style_images(content_frame)
-        init_img = get_init_image(args.first_frame_type, content_frame, style_imgs, frame)
-        args.max_iterations = args.first_frame_iterations
-        tick = time.time()
-        stylize(content_frame, style_imgs, init_img, frame)
-        tock = time.time()
-        print('Frame {} elapsed time: {}'.format(frame, tock - tick))
-      else:
-        content_frame = get_content_frame(frame)
-        style_imgs = get_style_images(content_frame)
-        init_img = get_init_image(args.init_frame_type, content_frame, style_imgs, frame)
-        args.max_iterations = args.frame_iterations
-        tick = time.time()
-        stylize(content_frame, style_imgs, init_img, frame)
-        tock = time.time()
-        print('Frame {} elapsed time: {}'.format(frame, tock - tick))
+      if not os.path.exists(get_video_frame_output_path(frame)):
+        if frame == args.start_frame:
+          content_frame = get_content_frame(frame)
+          style_imgs = get_style_images(content_frame)
+          init_img = get_init_image(args.first_frame_type, content_frame, style_imgs, frame)
+          args.max_iterations = args.first_frame_iterations
+          tick = time.time()
+          stylize(content_frame, style_imgs, init_img, frame)
+          tock = time.time()
+          print('Frame {} elapsed time: {}'.format(frame, tock - tick))
+        else:
+          content_frame = get_content_frame(frame)
+          style_imgs = get_style_images(content_frame)
+          init_img = get_init_image(args.init_frame_type, content_frame, style_imgs, frame)
+          args.max_iterations = args.frame_iterations
+          tick = time.time()
+          stylize(content_frame, style_imgs, init_img, frame)
+          tock = time.time()
+          print('Frame {} elapsed time: {}'.format(frame, tock - tick))
 
 def main():
   global args
