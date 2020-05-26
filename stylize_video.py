@@ -70,6 +70,10 @@ def parse_args():
   parser.add_argument('--interlaced', action='store_true',
     default=False,
     help='Boolean flag indicating if source video is interlaced.')
+  
+  parser.add_argument('--overwrite_image_sequence_video', action='store_true',
+    default=False,
+    help='Boolean flag indicating if it\'s okay to overwrite a previously rendered video of stylized images')
 
   parser.add_argument('--', type=str, nargs='*',
     dest='additional_args',
@@ -394,6 +398,7 @@ def stylize_video(args):
       # 'python',
       sys.executable,
       'neural_style.py', '--video', 
+      '--optical_flow_dir', args.temp_dir, 
       '--video_input_dir', args.temp_dir, 
       '--video_output_dir', args.out_dir, 
       '--device', '/gpu:'+str(args.gpu),
@@ -410,6 +415,46 @@ def stylize_video(args):
                       
     try:
       process = subprocess.Popen(processParts,
+                               # stderr=subprocess.PIPE,
+                               stdin=subprocess.PIPE,
+                               universal_newlines=True)
+      res, err = process.communicate()
+      # if err: # warnings are sent to stderr and so cannot be trusted as signal of failure
+        # cprint('ERROR:','red')
+        # print(colored(err,'yellow'))
+        # die()
+    except KeyboardInterrupt:
+      process.terminate()
+      # process.send_signal(signal.SIGINT)
+      # process.wait()
+      die()
+      
+    # check if render process hasn't completed expected amount of work
+    content_frame_frmt = 'frame_{}.ppm'
+    if not path.exists(path.join(args.out_dir, content_frame_frmt.format(str(args.end_frame).zfill(4)))):
+      cprint('ERROR:','red')
+      cprint('Cannot find end frame in video output directory. Render process ended early?','yellow')
+      die()
+      
+                    
+    combine_frames(args)         
+
+      
+def combine_frames(args):
+  # Create video from output images.
+  print( "Converting image sequence to video.  This should be quick..." )
+  stylied_video_out_path = (path.join(args.out_dir,"etc",args.content_base_sized+"-stylized."+args.output_extension))
+  if path.exists(stylied_video_out_path) and not args.overwrite_image_sequence_video:
+    print( "Image sequence previously converted. Skipping.." )
+  else:
+    processParts = (args.FFMPEG + " -v quiet -i "+(path.join(args.out_dir,"frame_%04d.ppm"))+" "+stylied_video_out_path+" -y").split()
+    # print(" ".join(processParts))
+    # process = subprocess.Popen(processParts,
+                             # stdout=subprocess.PIPE,
+                             # universal_newlines=True)
+    # read_process(process)
+    try:
+      process = subprocess.Popen(processParts,
                                stdin=subprocess.PIPE,
                                universal_newlines=True)
       process.communicate()
@@ -418,29 +463,6 @@ def stylize_video(args):
       # process.send_signal(signal.SIGINT)
       # process.wait()
       die()
-                    
-    combine_frames(args)         
-
-      
-def combine_frames(args):
-  # Create video from output images.
-  print( "Converting image sequence to video.  This should be quick..." )
-  processParts = (args.FFMPEG + " -v quiet -i "+(path.join(args.out_dir,"frame_%04d.ppm"))+" "+(path.join(args.out_dir,"etc",args.content_base_sized+"-stylized."+args.output_extension))).split()
-  print(" ".join(processParts))
-  # process = subprocess.Popen(processParts,
-                           # stdout=subprocess.PIPE,
-                           # universal_newlines=True)
-  # read_process(process)
-  try:
-    process = subprocess.Popen(processParts,
-                             stdin=subprocess.PIPE,
-                             universal_newlines=True)
-    process.communicate()
-  except KeyboardInterrupt:
-    process.terminate()
-    # process.send_signal(signal.SIGINT)
-    # process.wait()
-    die()
 
 
 def main():
