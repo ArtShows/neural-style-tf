@@ -128,7 +128,7 @@ def parse_args():
   
   parser.add_argument('--device', type=str, 
     default='/gpu:0',
-    choices=['/gpu:0', '/cpu:0'],
+    choices=['/gpu:0', '/gpu:1', '/cpu:0'],
     help='GPU or CPU mode.  GPU mode requires NVIDIA CUDA. (default|recommended: %(default)s)')
   
   parser.add_argument('--img_output_dir', type=str, 

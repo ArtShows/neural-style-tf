@@ -61,6 +61,10 @@ def parse_args():
   parser.add_argument('-ef', '--end_frame', type=int, 
     help='Frame to stop rendering at')
     
+  parser.add_argument('-sf', '--start_frame', type=int, 
+    default=1,
+    help='Frame to start rendering at')
+    
   parser.add_argument('-ms', '--max_size', type=int, 
     help='Max size to resize input video\' longest edge to')
   
@@ -75,22 +79,23 @@ def parse_args():
     default=False,
     help='Boolean flag indicating if it\'s okay to overwrite a previously rendered video of stylized images')
 
-  parser.add_argument('--', type=str, nargs='*',
-    dest='additional_args',
-    help="Extra arguments to be passed along to neural_style.py. Ex: " + colored("-- --first_frame_iterations 600 --frame_iterations 200", 'yellow') 
-  )
+  # parser.add_argument('--', type=str, nargs='*',
+    # dest='additional_args',
+    # help="Extra arguments to be passed along to neural_style.py. Ex: " + colored("-- --first_frame_iterations 600 --frame_iterations 200", 'yellow') 
+  # )
   
   # Separate out additional arguments to be sent along to neural_style.py
-  inputArgs = sys.argv[1:]
-  additional_args_pos = next((i for i,v in enumerate(sys.argv) if v.lower() == '--'), False)
-  additional_args=[]
-  if( additional_args_pos is not False ):
-    inputArgs = sys.argv[1:additional_args_pos]
-    additional_args = sys.argv[additional_args_pos+1:]
+  # inputArgs = sys.argv[1:]
+  # additional_args_pos = next((i for i,v in enumerate(sys.argv) if v.lower() == '--'), False)
+  # additional_args=[]
+  # if( additional_args_pos is not False ):
+    # inputArgs = sys.argv[1:additional_args_pos]
+    # additional_args = sys.argv[additional_args_pos+1:]
     
     
   # Parse the args
-  args = parser.parse_args(inputArgs)  
+  # args = parser.parse_args(inputArgs)  
+  args, additional_args = parser.parse_known_args()  
   if args.verbose: print('parsed args:',args)
   
   
@@ -277,6 +282,8 @@ def prepare_input(args):
   hashargs = {}
   for arg in hashableargs:
     hashargs[arg] = getattr(args,arg)
+  if args.start_frame > 1:
+    hashargs['start_frame'] = args.start_frame
   argshash = tight_crc32(hashargs)
   if args.verbose: print('hashableargs',hashableargs)
   if args.verbose: print('hashargs',hashargs)
@@ -285,6 +292,14 @@ def prepare_input(args):
   if len(out_dir_name) > args.max_output_dir_name_length:
     out_dir_name=args.content_filename_base+"_ms"+str(args.max_size)+"-x-"+tight_crc32(args.style_nickname)+"_"+argshash
      #we assume hashing the styles will minimize the length enough
+
+  if len(out_dir_name) > args.max_output_dir_name_length:
+    out_dir_name=args.content_filename_base+"_ms"+str(args.max_size)+"-x-"+tight_crc32(args.style_nickname+argshash)
+     #try combining style with argshash
+     
+  if len(out_dir_name) > args.max_output_dir_name_length:
+    out_dir_name=tight_crc32(args.content_filename_base)+"_ms"+str(args.max_size)+"-x-"+tight_crc32(args.style_nickname+argshash)
+     #minimize content name
      
   if len(out_dir_name) > args.max_output_dir_name_length:
     eprint('Unable to shorten output directory name to within desired limits!')
@@ -293,7 +308,10 @@ def prepare_input(args):
     
   args.out_dir = path.join("./video_output/",out_dir_name)
   out_dir_etc = path.join(args.out_dir,'etc')
-  pathlib.Path(out_dir_etc).mkdir(parents=True, exist_ok=True)
+  
+  if not args.skiprender:
+    pathlib.Path(out_dir_etc).mkdir(parents=True, exist_ok=True)
+  
   if args.verbose: print('out_dir: ',args.out_dir)
      
 
@@ -309,7 +327,7 @@ def prepare_input(args):
   nprint(colored('Saving frames of the video as individual image files','yellow'))
   if not path.exists(temp_dir+'/frame_0001.ppm'):
     
-    ffmpeg_filters="scale=iw*sar:ih" #fix aspect ratio
+    ffmpeg_filters="scale=iw*sar:ih" #fix aspect ratio for non-square pixels
     if args.interlaced:
       ffmpeg_filters=ffmpeg_filters+',yadif'
     
@@ -401,14 +419,16 @@ def stylize_video(args):
       '--optical_flow_dir', args.temp_dir, 
       '--video_input_dir', args.temp_dir, 
       '--video_output_dir', args.out_dir, 
-      '--device', '/gpu:'+str(args.gpu),
+      '--device', '/gpu:'+ str(args.gpu) if args.gpu >= 0 else '/cpu:0',
       '--style_imgs_dir', args.style_dir, 
       '--style_imgs'] + args.style_images_filenames + [
+      '--start_frame', str(args.start_frame), 
       '--end_frame', str(args.end_frame), 
       '--max_size', str(args.max_size), 
       '--verbose', 
       '--style_imgs_weights' ] + args.style_imgs_weights + args.additional_args
     
+    processParts = [str(elem) for elem in processParts]
     print(" ".join(processParts))
                    
     save_neural_style_args(args,processParts)
@@ -469,7 +489,8 @@ def main():
   global args
   args = parse_args()
   prepare_input(args)
-  save_rawargs(args)
+  if not args.skiprender:
+    save_rawargs(args)
   optical_flow(args)
   stylize_video(args)
   nprint(colored("\nThe End!", 'yellow'))

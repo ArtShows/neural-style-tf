@@ -1,5 +1,30 @@
 # neural-style-tf
 
+This is a fork of cysmith's [neural-style-tf](https://github.com/cysmith/neural-style-tf) project.
+
+### The goals of this fork:
+
+  * Make os-agnostic
+    - [ ] Convert bash to python
+        - [x] stylize_video 
+        - [ ] stylize_image
+    - [ ] Optical flow process for windows
+  * Bug fixes
+  * Expand options for stylization
+    - [x] Specifying max_size in stylize_video resizes input video during pre-process
+    - [ ] Automatic conversion of interlaced to progressive during video pre-process
+    - [x] Manually convert interlaced to progressive during video pre-process (--interlaced flag)
+    - [x] Automatic conversion of non-square pixels during video pre-process
+  * Speed, Performance, Usability
+    - [x] Stop deleting optical flow and video cache at end of process.
+    - [x] Stop overwriting cached/existing data (video frames, optical flow, output frames)
+    - [x] Create unique keys for optical flow, video cache, and output (video and image) to allow storing multiple jobs without overwriting.
+    - [x] Incerased logging during pre-process.
+  * It seems the original project is abandonware at this point. Integrating features from other forks—especially those proposed in merge requests to original project—should give an outlet for code and research that might otherwise be lost. 
+
+
+## Original readme below:
+
 This is a TensorFlow implementation of several techniques described in the papers: 
 * [Image Style Transfer Using Convolutional Neural Networks](http://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Gatys_Image_Style_Transfer_CVPR_2016_paper.pdf)
 by Leon A. Gatys, Alexander S. Ecker, Matthias Bethge
